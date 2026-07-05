@@ -3,6 +3,9 @@
 Play Diablo 1 in any browser on your home network.  
 MPQ and saves live at `/mnt/cache/appdata/diabloweb/` and survive every rebuild.
 
+My goal was simple : Play the same Diablo 1 game, from any Web Browser inside my home, without having to load or select any files. 
+Just open the URL and play. 
+
 ---
 
 ## Step 1 — Copy files to Unraid
