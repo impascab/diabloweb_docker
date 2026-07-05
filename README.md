@@ -1,107 +1,106 @@
-# DiabloWeb — Self-Hosted Docker Edition
+# Diablo Web — Self-Hosted on Unraid (no Docker Compose needed)
 
-> **⚠️ Vibe Coded Disclaimer**
-> This entire project — every line of the Dockerfile, server code, overlay, nginx config, shell scripts, and build patches — was designed and written by [Claude](https://claude.ai) (Anthropic's AI assistant) through an iterative conversation.
-> My personal contribution was the idea, testing, and feedback.
-
-A self-hosted Docker container that lets you play Diablo 1 in any browser on your home network, built on top of [d07RiV/diabloweb](https://github.com/d07RiV/diabloweb).
-
-**Upload your MPQ once → play from any computer on your network forever.**
+Play Diablo 1 in any browser on your home network.  
+MPQ and saves live at `/mnt/cache/appdata/diabloweb/` and survive every rebuild.
 
 ---
 
-## What this adds on top of diabloweb
+## Step 1 — Copy files to Unraid
 
-| Feature | Detail |
-|---|---|
-| 🐳 Docker container | One build, runs forever on Unraid or any Linux server |
-| 📦 MPQ persistence | Upload DIABDAT.MPQ once, stored on server, auto-loaded on every browser |
-| 🖥️ Any computer | Second/third computer on your LAN gets the MPQ automatically — no file needed |
-| 💾 Save file sync | Upload DevilutionX `.sv` saves, synced to all browsers |
-| 🔧 HTTP compatible | Works over plain HTTP (no HTTPS/reverse proxy needed) via SharedArrayBuffer polyfill |
-| 🏥 Health checks | Docker/Unraid shows real container health status |
-
----
-
-## Requirements
-
-- Unraid (or any Linux machine with Docker)
-- A copy of `DIABDAT.MPQ` from the original Diablo game (GoG or CD)
-- Or `spawn.mpq` for the free shareware version (Act 1 only)
+Transfer this entire folder to your Unraid server. Easiest ways:
+- **Unraid's built-in file manager** (Files app in the top bar) → navigate to `/mnt/cache/appdata/` → upload the zip and extract
+- **From another computer on your network** via SMB: `\\UNRAID\appdata\` → paste the folder there
+- **SSH + scp** from your computer:
+  ```bash
+  scp -r diabloweb-docker/ root@UNRAID-IP:/mnt/cache/appdata/diabloweb-build/
+  ```
 
 ---
 
-## Installation on Unraid
-
-### Step 1 — Get the files
-
-Download the latest release zip from this repo and extract it to your Unraid server. Place the files at:
-
-```
-/mnt/cache/appdata/diabloweb-build/
-```
-
-You can do this via:
-- **SMB share**: `\\UNRAID\cache\appdata\diabloweb-build\`
-- **SSH + scp**: `scp -r diabloweb-build/ root@UNRAID-IP:/mnt/cache/appdata/`
-- **Unraid file manager**: Files app in the Unraid top bar
-
-### Step 2 — Build the Docker image (one time, ~5 minutes)
+## Step 2 — Build the image (one-time, via SSH)
 
 SSH into Unraid:
-
 ```bash
 ssh root@YOUR-UNRAID-IP
-chmod +x /mnt/cache/appdata/diabloweb-build/build-on-unraid.sh
-docker build -t diabloweb:local /mnt/cache/appdata/diabloweb-build
 ```
 
-You will see the build progress. When it finishes with `Successfully tagged diabloweb:local` you are ready.
+Then run the build script (replace the path with wherever you put the files):
+```bash
+bash /mnt/cache/appdata/diabloweb-build/build-on-unraid.sh
+```
 
-### Step 3 — Add Container in Unraid GUI
+This takes about **5 minutes** — it clones the diabloweb repo, compiles the WebAssembly game, and creates a local Docker image called `diabloweb:local`.
 
-Go to **Docker tab → Add Container** and fill in:
+You only ever need to do this once (or when you want to update the game).
 
-| Field | Value |
-|---|---|
-| Name | `diabloweb` |
-| Repository | `diabloweb:local` |
-| Network Type | `Bridge` |
-| Restart Policy | `Unless Stopped` |
+---
 
-**Add a Port mapping:**
+## Step 3 — Add Container in Unraid GUI
 
-| Container Port | Host Port | Protocol |
-|---|---|---|
-| `8080` | `8666` | TCP |
+Go to **Unraid WebUI → Docker tab → Add Container** (or the "+" button).
 
-**Add Path #1 — MPQ storage:**
+Fill in these fields exactly:
 
 | Field | Value |
 |---|---|
+| **Name** | `diabloweb` |
+| **Repository** | `diabloweb:local` |
+| **Network Type** | `Bridge` |
+| **Console shell command** | `Shell` |
+| **Restart policy** | `Unless Stopped` |
+
+### Port Mapping
+Click **Add another Path, Port, Variable, Label or Device** → Port:
+
+| Field | Value |
+|---|---|
+| Name | `WebUI` |
+| Container Port | `8080` |
+| Host Port | `8666` |
+| Protocol | `TCP` |
+
+### Volume 1 — MPQ files
+Click **Add** → Path:
+
+| Field | Value |
+|---|---|
+| Name | `MPQ` |
 | Container Path | `/data/mpq` |
 | Host Path | `/mnt/cache/appdata/diabloweb/mpq` |
+| Access Mode | `Read/Write` |
 
-**Add Path #2 — Save file storage:**
+### Volume 2 — Save files
+Click **Add** → Path:
 
 | Field | Value |
 |---|---|
+| Name | `Saves` |
 | Container Path | `/data/saves` |
 | Host Path | `/mnt/cache/appdata/diabloweb/saves` |
+| Access Mode | `Read/Write` |
 
-Click **Apply**.
+Click **Apply** — Unraid will start the container.
 
-### Step 4 — Play
+---
 
-Open `http://YOUR-UNRAID-IP:8666` in any browser on your network.
+## Step 4 — Play!
+
+Open **`http://YOUR-UNRAID-IP:8666`** in any browser on your network.
 
 **First visit:**
-1. Click **Choose DIABDAT.MPQ** and select your file
-2. Optionally upload a DevilutionX `.sv` save file
+1. Upload `DIABDAT.MPQ` (full GoG game) or `spawn.mpq` (free shareware/demo)
+2. Optionally upload a `.sv` save file from DevilutionX
 3. Click **▶ Launch Diablo**
-4. The page reloads and the game starts automatically
 
-**Every visit after that** (any computer on your network): the game starts on its own — no file selection, no prompts.
+**Every visit after that:** Goes straight to the game — no re-upload, no prompts.
+
+---
+
+## Pause / Resume
+
+- **⏸ Pause button** — always visible in the top-right corner of the game
+- **F9 keyboard shortcut** — works too
+- Dims the screen and suspends the game loop
 
 ---
 
@@ -109,17 +108,15 @@ Open `http://YOUR-UNRAID-IP:8666` in any browser on your network.
 
 | Source | Where to find it |
 |---|---|
-| **GoG** (recommended) | Buy at gog.com → install → `DIABDAT.MPQ` in the install folder |
-| **Original CD** | Copy `DIABDAT.MPQ` directly from the disc |
-| **Shareware** (free, Act 1 only) | Use `spawn.mpq` from the original shareware release |
+| **GoG** (recommended) | Buy at gog.com → install → `DIABDAT.MPQ` is in the install folder |
+| **Original CD** | Copy `DIABDAT.MPQ` from the disc |
+| **Shareware** (free, Act 1 only) | Use `spawn.mpq` — get it from the [live demo](https://d07riv.github.io/diabloweb/) via DevTools Network tab |
 
 ---
 
-## DevilutionX save files
+## DevilutionX save files (.sv)
 
-Save files from [DevilutionX](https://github.com/diasurgical/devilutionX) are fully compatible.
-
-| Platform | Save location |
+| Platform | Save file location |
 |---|---|
 | Windows | `%APPDATA%\diasurgical\devilution\` |
 | macOS | `~/Library/Application Support/diasurgical/devilution/` |
@@ -127,69 +124,52 @@ Save files from [DevilutionX](https://github.com/diasurgical/devilutionX) are fu
 | iOS | Files app → On My iPhone → DevilutionX |
 | Android | `Android/data/org.diasurgical.devilution/files/` |
 
----
-
-## Build patches applied
-
-The Dockerfile applies these patches to the diabloweb source at build time:
-
-| Patch | Reason |
-|---|---|
-| `node-sass` → `sass` (Dart Sass) | `node-sass` cannot compile on Alpine Linux with Python 3.12+ (distutils removed) |
-| `peerjs` pinned to `1.0.2` | Newer `peerjs 1.5.x` uses private class fields (`#_`) that webpack 4 cannot parse |
-| `homepage` set to `"."` | Original points to GitHub Pages path, breaking self-hosted asset loading |
-| `componentDidMount` auto-start | Patches diabloweb to auto-start when MPQ is found in IndexedDB |
-| SharedArrayBuffer polyfill | Enables WebAssembly threading over plain HTTP without HTTPS |
+Upload the `.sv` file on the setup screen. It's stored at `/mnt/cache/appdata/diabloweb/saves/` on your server.
 
 ---
 
-## Architecture
+## Updating the game
 
-```
-Browser
-  └── http://UNRAID-IP:8666
-        └── nginx (port 8080 in container)
-              ├── /              → serves CRA build (diabloweb game)
-              ├── /api/*         → proxied to Node.js API (port 3000)
-              └── /static/*      → cached game assets
-                    
-Node.js API (api-server.js)
-  ├── GET  /api/status           → check if MPQ/saves exist on server
-  ├── POST /api/upload/mpq       → receive and store MPQ file
-  ├── POST /api/upload/save      → receive and store save file  
-  ├── GET  /api/serve/:file      → serve stored MPQ/save to browser
-  └── GET  /api/saves/:name      → download a save file
-
-Persistent storage (host volume)
-  ├── /data/mpq/DIABDAT.MPQ      → stored MPQ (survives container rebuilds)
-  └── /data/saves/*.sv           → stored save files
-```
-
----
-
-## Updating
+If a new version of diabloweb is released:
 
 ```bash
-docker build --no-cache -t diabloweb:local /mnt/cache/appdata/diabloweb-build
+ssh root@YOUR-UNRAID-IP
+cd /mnt/cache/appdata/diabloweb-build
+git pull   # if you cloned, or re-copy the files
+docker build --no-cache -t diabloweb:local .
 ```
 
-Then stop and restart the container in Unraid. Your MPQ and saves are on the host volume and are never affected by rebuilds.
+Then in Unraid GUI → Docker → click the container → **Restart**.  
+Your MPQ and saves are untouched.
 
 ---
 
-## Credits
+## If you use a reverse proxy (Nginx Proxy Manager, Swag, etc.)
 
-- **[d07RiV](https://github.com/d07RiV)** — original [diabloweb](https://github.com/d07RiV/diabloweb) project
-- **[GalaXyHaXz](https://github.com/GalaXyHaXz) and the [devilution team](https://github.com/diasurgical/devilution)** — Diablo source reconstruction
-- **[Claude](https://claude.ai) by Anthropic** — wrote all the Docker/server/overlay code in this repo through AI-assisted development
-- **Blizzard Entertainment** — original Diablo game (you need a legal copy of DIABDAT.MPQ)
+Add these headers to your proxy config — they're required for the WebAssembly game to run:
+
+```
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Embedder-Policy: require-corp
+```
+
+Without these, the game will fail to load with a SharedArrayBuffer error.
 
 ---
 
-## License
+## Troubleshooting
 
-The self-hosting wrapper code in this repository (Dockerfile, api-server.js, nginx.conf, overlay scripts, etc.) is MIT licensed.
+**"Image not found" in Unraid GUI**  
+Make sure you ran `build-on-unraid.sh` first and it completed without errors. Verify with:
+```bash
+docker images | grep diabloweb
+```
 
-The diabloweb game engine is subject to its own license — see [d07RiV/diabloweb](https://github.com/d07RiV/diabloweb).
+**Blank screen after launching**  
+Open browser DevTools (F12) → Console. If you see SharedArrayBuffer errors, your reverse proxy is missing the COOP/COEP headers above.
 
-Diablo itself is © Blizzard Entertainment. You must own a legal copy of the game.
+**MPQ upload stuck / fails**  
+`DIABDAT.MPQ` is ~700 MB. Use a wired connection if possible. The progress bar shows real upload progress.
+
+**Save file not loading in-game**  
+The web version stores active saves in browser localStorage. The `.sv` upload is for backup/migration. Once uploaded to the server, load your hero from the in-game "Load Game" menu.

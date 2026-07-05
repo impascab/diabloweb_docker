@@ -1,0 +1,14 @@
+# Kept for reference only — use Unraid's Add Container GUI instead.
+# See README.md for the exact GUI fields to fill in.
+version: "3.8"
+
+services:
+  diabloweb:
+    image: diabloweb:local
+    container_name: diabloweb
+    restart: unless-stopped
+    ports:
+      - "8666:8080"
+    volumes:
+      - /mnt/cache/appdata/diabloweb/mpq:/data/mpq
+      - /mnt/cache/appdata/diabloweb/saves:/data/saves
