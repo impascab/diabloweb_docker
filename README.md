@@ -1,7 +1,7 @@
 # DiabloWeb — Self-Hosted Docker Edition
 
 > **⚠️ Vibe Coded Disclaimer**
-> This entire project — every line of the Dockerfile, server code, overlay, nginx config, shell scripts, and build patches — was designed and written by [Claude](https://claude.ai) (Anthropic's AI assistant) through an iterative conversation.
+> This entire project — every line of the Dockerfile, server code, overlay, nginx config, shell scripts, and build patches — was designed and written by Claude.
 > My contribution was the idea, testing, and feedback. 
 
 A self-hosted Docker container that lets you play Diablo 1 in any browser on your home network, built on top of [d07RiV/diabloweb](https://github.com/d07RiV/diabloweb).
