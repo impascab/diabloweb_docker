@@ -376,8 +376,33 @@
         srv.mpqSpawn = !!srv.mpqSpawn;
         srv.saves    = Array.isArray(srv.saves) ? srv.saves : [];
 
-        // MPQ already in this browser's IndexedDB — game starts on its own
-        if (idbHasFull || idbHasSpawn) return;
+        // MPQ already in this browser's IndexedDB.
+        // Always pull ALL saves from the server unconditionally — the server is
+        // the authoritative source. We WAIT for all saves to finish writing to
+        // IDB before returning, so the game always starts with the latest saves.
+        // Without the wait, the game boots with stale IDB saves before the
+        // fresh ones finish downloading.
+        if (idbHasFull || idbHasSpawn) {
+          if (srv.saves.length) {
+            var savePromises = srv.saves.map(function (name) {
+              var key = name.toLowerCase();
+              return fetchAndStore(db, '/api/serve/' + encodeURIComponent(name), key, null);
+            });
+            return Promise.all(savePromises).then(function () {
+              // Reload so diabloweb's componentDidMount reads the fresh saves
+              // from IDB. Without reload, React already mounted with stale saves.
+              // On reload, idbHasFull/idbHasSpawn will still be true but
+              // srv.saves will be empty if we mark sync done — so we use a flag.
+              if (!sessionStorage.getItem('dw-saves-synced')) {
+                sessionStorage.setItem('dw-saves-synced', '1');
+                window.location.reload();
+              }
+            }).catch(function (e) {
+              console.warn('[diablo-manager] Save sync error:', e.message);
+            });
+          }
+          return;
+        }
 
         // Show setup screen (Launch fetches from server into IndexedDB)
         showSetupOverlay(db, srv);
