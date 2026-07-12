@@ -27,15 +27,20 @@ RUN mkdir -p node_modules/node-sass && \
       > node_modules/node-sass/index.js
 
 # Patch App.js to auto-start the game when MPQ is found in IndexedDB.
-# The original componentDidMount only checks for spawn.mpq to show a button;
-# it never auto-starts. We add an auto-start call after the IDB check so that
-# when the page loads and the MPQ is already in IDB, the game starts immediately
-# without requiring any user interaction.
 RUN sed -i 's/this\.fs\.then(fs => {/this.fs.then(fs => { const diabdat = fs.files.get("diabdat.mpq"); if (diabdat) { this.start(new File([diabdat], "diabdat.mpq")); return; }/' src/App.js
+
+# Copy the post-build patch script into the build container
+COPY patch-build.js /build/patch-build.js
 
 # CI=false     → deprecation warnings don't abort the build
 # NODE_OPTIONS → webpack 4 needs legacy OpenSSL provider on Node 17+
 RUN CI=false NODE_OPTIONS=--openssl-legacy-provider npm run build
+
+# Inject save-sync code into the compiled main.*.js AFTER webpack builds it.
+# Patching before build fails because webpack minifies variable names,
+# breaking any source-level sed patterns. This script finds the minified
+# update:(e,t)=>n.set(e,t) pattern and wraps it to also POST saves to server.
+RUN node /build/patch-build.js
 
 # ── Stage 2: Runtime ──────────────────────────────────────────────────────────
 FROM node:18-alpine
