@@ -36,10 +36,10 @@ My goal was to continue playing the same D1 session from any web browser in my h
 
 ### Step 1 — Get the files
 
-Download the latest release zip from this repo and extract it to your Unraid server. Place the files at:
+Download the latest release zip from this repo and extract it to your Unraid server. Place the files at (or wherever you put your appdata folders):
 
 ```
-/mnt/cache/appdata/diabloweb-build/
+/mnt/appdata/diabloweb-build/
 ```
 
 You can do this via:
