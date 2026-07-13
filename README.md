@@ -18,7 +18,7 @@ My goal was to continue playing the same D1 session from any web browser in my h
 | 🐳 Docker container | One build, runs forever on Unraid or any Linux server |
 | 📦 MPQ persistence | Upload DIABDAT.MPQ once, stored on server, auto-loaded on every browser |
 | 🖥️ Any computer | Second/third computer on your LAN gets the MPQ automatically — no file needed |
-| 💾 Save file sync | Upload DevilutionX `.sv` saves, synced to all browsers |
+| 💾 Save file sync | Upload Diablo 1 `.sv` saves, synced to all browsers |
 | 🔧 HTTP compatible | Works over plain HTTP (no HTTPS/reverse proxy needed) via SharedArrayBuffer polyfill |
 | 🏥 Health checks | Docker/Unraid shows real container health status |
 
@@ -98,7 +98,7 @@ Open `http://YOUR-UNRAID-IP:8666` in any browser on your network.
 
 **First visit:**
 1. Click **Choose DIABDAT.MPQ** and select your file
-2. Optionally upload a DevilutionX `.sv` save file
+2. Optionally upload a Diablo 1 `.sv` save file
 3. Click **▶ Launch Diablo**
 4. The page reloads and the game starts automatically
 
